@@ -11,6 +11,8 @@ public enum SidebarType implements ConfigEnum {
 	LOOKUP_HISTORY("lookup-history", 80, 146),
 	CRAFT_HISTORY("craft-history", 64, 146),
 	CHESS("chess", 48, 146),
+
+	TYPE_RECIPES("type-recipes", 96, 146),
 	;
 	
 	private final String name;

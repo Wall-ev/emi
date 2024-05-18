@@ -1,6 +1,7 @@
 package dev.emi.emi.runtime;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
@@ -9,11 +10,14 @@ import com.google.gson.JsonObject;
 
 import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.recipe.EmiRecipe;
+import dev.emi.emi.api.recipe.EmiRecipeCategory;
+import dev.emi.emi.api.recipe.EmiRecipeManager;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.serializer.EmiIngredientSerializer;
 import dev.emi.emi.chess.EmiChess;
 import dev.emi.emi.config.EmiConfig;
 import dev.emi.emi.config.SidebarType;
+import dev.emi.emi.registry.EmiRecipes;
 import dev.emi.emi.registry.EmiStackList;
 import dev.emi.emi.screen.EmiScreenManager;
 import net.minecraft.util.Identifier;
@@ -24,6 +28,9 @@ public class EmiSidebars {
 	public static List<EmiIngredient> lookupHistory = Lists.newArrayList();
 	public static List<EmiIngredient> craftHistory = Lists.newArrayList();
 
+	public static List<EmiIngredient> typeRecipes = Lists.newArrayList();
+
+
 	public static List<? extends EmiIngredient> getStacks(SidebarType type) {
 		return switch (type) {
 			case INDEX -> EmiConfig.editMode ? EmiStackList.stacks : EmiStackList.filteredStacks;
@@ -32,6 +39,7 @@ public class EmiSidebars {
 			case LOOKUP_HISTORY -> lookupHistory;
 			case CRAFT_HISTORY -> craftHistory;
 			case CHESS -> EmiChess.SIDEBAR;
+			case TYPE_RECIPES -> typeRecipes;
 			default -> List.of();
 		};
 	}

@@ -528,14 +528,14 @@ public class ListWidget extends AbstractParentElement implements Drawable, Selec
 	}
 
 	@Override
-	public Selectable.SelectionType getType() {
+	public SelectionType getType() {
 		if (this.isFocused()) {
-			return Selectable.SelectionType.FOCUSED;
+			return SelectionType.FOCUSED;
 		}
 		if (this.hoveredEntry != null) {
-			return Selectable.SelectionType.HOVERED;
+			return SelectionType.HOVERED;
 		}
-		return Selectable.SelectionType.NONE;
+		return SelectionType.NONE;
 	}
 
 	@Nullable

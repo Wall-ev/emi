@@ -341,12 +341,12 @@ public class QDCSS {
 
 			@Override
 			public Set<Entry<String, String>> entrySet() {
-				return new AbstractSet<Map.Entry<String,String>>() {
+				return new AbstractSet<Entry<String,String>>() {
 
 					@Override
 					public Iterator<Entry<String, String>> iterator() {
 						Iterator<Entry<String, List<String>>> delegate = QDCSS.this.entrySet().iterator();
-						return new Iterator<Map.Entry<String,String>>() {
+						return new Iterator<Entry<String,String>>() {
 
 							@Override
 							public boolean hasNext() {

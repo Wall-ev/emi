@@ -22,6 +22,7 @@ import dev.emi.emi.platform.EmiAgnos;
 import dev.emi.emi.registry.EmiRecipeFiller;
 import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
@@ -33,11 +34,23 @@ import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.entry.RegistryEntryList.Named;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.screen.AbstractRecipeScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 
 public class EmiUtil {
 	public static final Random RANDOM = new Random();
+
+	public static boolean isScreenHandler(Screen screen){
+		return screen instanceof HandledScreen hs && hs.getScreenHandler() instanceof AbstractRecipeScreenHandler;
+	}
+
+	public static ScreenHandler getScreenHandler(Screen screen) {
+		if (screen instanceof HandledScreen hs) {
+			return hs.getScreenHandler();
+		}
+		return null;
+	}
 
 	public static String subId(Identifier id) {
 		return id.getNamespace() + "/" + id.getPath();

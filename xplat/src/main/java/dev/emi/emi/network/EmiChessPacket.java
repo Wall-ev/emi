@@ -66,7 +66,7 @@ public abstract class EmiChessPacket implements EmiPacket {
 		public void apply(PlayerEntity player) {
 			PlayerEntity opponent = player.getWorld().getPlayerByUuid(uuid);
 			if (opponent instanceof ServerPlayerEntity spe) {
-				EmiNetwork.sendToClient(spe, new EmiChessPacket.S2C(player.getUuid(), type, start, end));
+				EmiNetwork.sendToClient(spe, new S2C(player.getUuid(), type, start, end));
 			}
 		}
 	}
