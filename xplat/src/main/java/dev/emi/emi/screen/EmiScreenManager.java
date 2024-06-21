@@ -948,149 +948,149 @@ public class EmiScreenManager {
         }
     }
 
-    public static boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        scrollAcc += amount;
-        int sa = (int) scrollAcc;
-        scrollAcc %= 1;
-        if (isDisabled()) {
-            return false;
-        }
-        recalculate();
-        SidebarPanel panel = getHoveredPanel((int) mouseX, (int) mouseY);
-        if (panel != null) {
-            panel.scroll(-sa);
-            return true;
-        }
-        return false;
-    }
+	public static boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+		scrollAcc += amount;
+		int sa = (int) scrollAcc;
+		scrollAcc %= 1;
+		if (isDisabled()) {
+			return false;
+		}
+		recalculate();
+		SidebarPanel panel = getHoveredPanel((int) mouseX, (int) mouseY);
+		if (panel != null) {
+			panel.scroll(-sa);
+			return true;
+		}
+		return false;
+	}
 
-    public static boolean mouseClicked(double mouseX, double mouseY, int button) {
-        EmiScreenBase base = EmiScreenBase.getCurrent();
-        if (base == null) {
-            return false;
-        }
-        if (search.mouseClicked(mouseX, mouseY, button)) {
-            return true;
-        } else if (emi.mouseClicked(mouseX, mouseY, button)) {
-            return true;
-        } else if (tree.mouseClicked(mouseX, mouseY, button)) {
-            return true;
-        }
-        for (SidebarPanel panel : panels) {
-            if (panel.cycle.mouseClicked(mouseX, mouseY, button)) {
-                return true;
-            } else if (panel.pageLeft.mouseClicked(mouseX, mouseY, button)) {
-                return true;
-            } else if (panel.pageRight.mouseClicked(mouseX, mouseY, button)) {
-                return true;
-            }
-        }
-        if (isDisabled()) {
-            if (EmiConfig.toggleVisibility.matchesMouse(button)) {
-                toggleVisibility(true);
-                return true;
-            }
-            return false;
-        }
-        recalculate();
-        EmiIngredient ingredient = getHoveredStack((int) mouseX, (int) mouseY, false).getStack();
-        pressedStack = ingredient;
-        if (!ingredient.isEmpty()) {
-            return true;
-        } else {
-            if (genericInteraction(bind -> bind.matchesMouse(button))) {
-                return true;
-            }
-        }
-        return false;
-    }
+	public static boolean mouseClicked(double mouseX, double mouseY, int button) {
+		EmiScreenBase base = EmiScreenBase.getCurrent();
+		if (base == null) {
+			return false;
+		}
+		if (search.mouseClicked(mouseX, mouseY, button)) {
+			return true;
+		} else if (emi.mouseClicked(mouseX, mouseY, button)) {
+			return true;
+		} else if (tree.mouseClicked(mouseX, mouseY, button)) {
+			return true;
+		}
+		for (SidebarPanel panel : panels) {
+			if (panel.cycle.mouseClicked(mouseX, mouseY, button)) {
+				return true;
+			} else if (panel.pageLeft.mouseClicked(mouseX, mouseY, button)) {
+				return true;
+			} else if (panel.pageRight.mouseClicked(mouseX, mouseY, button)) {
+				return true;
+			}
+		}
+		if (isDisabled()) {
+			if (EmiConfig.toggleVisibility.matchesMouse(button)) {
+				toggleVisibility(true);
+				return true;
+			}
+			return false;
+		}
+		recalculate();
+		EmiIngredient ingredient = getHoveredStack((int) mouseX, (int) mouseY, false).getStack();
+		pressedStack = ingredient;
+		if (!ingredient.isEmpty()) {
+			return true;
+		} else {
+			if (genericInteraction(bind -> bind.matchesMouse(button))) {
+				return true;
+			}
+		}
+		return false;
+	}
 
-    public static boolean mouseReleased(double mouseX, double mouseY, int button) {
-        EmiScreenBase base = EmiScreenBase.getCurrent();
-        if (base == null) {
-            return false;
-        }
-        try {
-            if (isDisabled()) {
-                return false;
-            }
-            int mx = (int) mouseX;
-            int my = (int) mouseY;
-            recalculate();
-            if (EmiConfig.cheatMode && EmiConfig.deleteCursorStack.matchesMouse(button)) {
-                if (deleteCursor(mx, my)) {
-                    // Returning false here makes the handled screen do something and removes a bug, oh well.
-                    return false;
-                }
-            }
-            SidebarPanel panel = getHoveredPanel(mx, my);
-            if (draggedStack == EmiStack.EMPTY && panel != null && panel.getType() == SidebarType.CHESS) {
-                EmiChess.interact(pressedStack, button);
-                return true;
-            }
-            if (!pressedStack.isEmpty()) {
-                if (!draggedStack.isEmpty()) {
-                    if (panel != null) {
-                        ScreenSpace space = panel.getHoveredSpace(mx, my);
-                        if (space != null && space.getType() == SidebarType.FAVORITES) {
-                            int page = panel.page;
-                            int pageSize = space.pageSize;
-                            int index = Math.min(space.getClosestEdge(mx, my), EmiFavorites.favorites.size());
-                            if (index + pageSize * page > EmiFavorites.favorites.size()) {
-                                index = EmiFavorites.favorites.size() - pageSize * page;
-                            }
-                            if (index >= 0) {
-                                EmiFavorites.addFavoriteAt(draggedStack, index + pageSize * page);
-                                space.batcher.repopulate();
-                            }
-                            return true;
-                        } else if (panel.getType() == SidebarType.CHESS) {
-                            EmiChess.drop(draggedStack, getHoveredStack(mx, my, true).getStack());
-                        }
-                    } else if (client.currentScreen != null) {
-                        if (EmiDragDropHandlers.dropStack(client.currentScreen, draggedStack, mx, my)) {
-                            return true;
-                        }
-                    }
-                } else {
-                    EmiStackInteraction hovered = getHoveredStack((int) mouseX, (int) mouseY, false);
-                    if (draggedStack.isEmpty() && stackInteraction(hovered, bind -> bind.matchesMouse(button))) {
-                        return true;
-                    }
-                }
-                if (genericInteraction(bind -> bind.matchesMouse(button))) {
-                    return true;
-                }
-            }
-            return false;
-        } finally {
-            pressedStack = EmiStack.EMPTY;
-            draggedStack = EmiStack.EMPTY;
-        }
-    }
+	public static boolean mouseReleased(double mouseX, double mouseY, int button) {
+		EmiScreenBase base = EmiScreenBase.getCurrent();
+		if (base == null) {
+			return false;
+		}
+		try {
+			if (isDisabled()) {
+				return false;
+			}
+			int mx = (int) mouseX;
+			int my = (int) mouseY;
+			recalculate();
+			if (EmiConfig.cheatMode && EmiConfig.deleteCursorStack.matchesMouse(button)) {
+				if (deleteCursor(mx, my)) {
+					// Returning false here makes the handled screen do something and removes a bug, oh well.
+					return false;
+				}
+			}
+			SidebarPanel panel = getHoveredPanel(mx, my);
+			if (draggedStack == EmiStack.EMPTY && panel != null && panel.getType() == SidebarType.CHESS) {
+				EmiChess.interact(pressedStack, button);
+				return true;
+			}
+			if (!pressedStack.isEmpty()) {
+				if (!draggedStack.isEmpty()) {
+					if (panel != null) {
+						ScreenSpace space = panel.getHoveredSpace(mx, my);
+						if (space != null && space.getType() == SidebarType.FAVORITES ) {
+							int page = panel.page;
+							int pageSize = space.pageSize;
+							int index = Math.min(space.getClosestEdge(mx, my), EmiFavorites.favorites.size());
+							if (index + pageSize * page > EmiFavorites.favorites.size()) {
+								index = EmiFavorites.favorites.size() - pageSize * page;
+							}
+							if (index >= 0) {
+								EmiFavorites.addFavoriteAt(draggedStack, index + pageSize * page);
+								space.batcher.repopulate();
+							}
+							return true;
+						} else if (panel.getType() == SidebarType.CHESS) {
+							EmiChess.drop(draggedStack, getHoveredStack(mx, my, true).getStack());
+						}
+					} else if (client.currentScreen != null) {
+						if (EmiDragDropHandlers.dropStack(client.currentScreen, draggedStack, mx, my)) {
+							return true;
+						}
+					}
+				} else {
+					EmiStackInteraction hovered = getHoveredStack((int) mouseX, (int) mouseY, false);
+					if (draggedStack.isEmpty() && stackInteraction(hovered, bind -> bind.matchesMouse(button))) {
+						return true;
+					}
+				}
+				if (genericInteraction(bind -> bind.matchesMouse(button))) {
+					return true;
+				}
+			}
+			return false;
+		} finally {
+			pressedStack = EmiStack.EMPTY;
+			draggedStack = EmiStack.EMPTY;
+		}
+	}
 
-    public static boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        EmiScreenBase base = EmiScreenBase.getCurrent();
-        if (base == null) {
-            return false;
-        }
-        if (isDisabled()) {
-            return false;
-        }
-        if (draggedStack.isEmpty() && button == 0) {
-            if (client.currentScreen instanceof HandledScreen<?> handled) {
-                if (!handled.getScreenHandler().getCursorStack().isEmpty()) {
-                    return false;
-                }
-            }
-            recalculate();
-            EmiStackInteraction hovered = getHoveredStack((int) mouseX, (int) mouseY, false);
-            if (hovered.getStack() != pressedStack && !(pressedStack instanceof EmiFavorite.Synthetic)) {
-                draggedStack = pressedStack;
-            }
-        }
-        return false;
-    }
+	public static boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+		EmiScreenBase base = EmiScreenBase.getCurrent();
+		if (base == null) {
+			return false;
+		}
+		if (isDisabled()) {
+			return false;
+		}
+		if (draggedStack.isEmpty() && button == 0) {
+			if (client.currentScreen instanceof HandledScreen<?> handled) {
+				if (!handled.getScreenHandler().getCursorStack().isEmpty()) {
+					return false;
+				}
+			}
+			recalculate();
+			EmiStackInteraction hovered = getHoveredStack((int) mouseX, (int) mouseY, false);
+			if (hovered.getStack() != pressedStack && !(pressedStack instanceof EmiFavorite.Synthetic)) {
+				draggedStack = pressedStack;
+			}
+		}
+		return false;
+	}
 
     public static boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         EmiScreenBase base = EmiScreenBase.getCurrent();
