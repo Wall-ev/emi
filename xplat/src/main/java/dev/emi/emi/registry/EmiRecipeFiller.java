@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import dev.emi.emi.runtime.EmiLog;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.Lists;
@@ -40,6 +41,16 @@ import net.minecraft.screen.slot.SlotActionType;
 public class EmiRecipeFiller {
 	public static Map<ScreenHandlerType<?>, List<EmiRecipeHandler<?>>> handlers = Maps.newHashMap();
 	public static BiFunction<ScreenHandler, EmiRecipe, EmiRecipeHandler<?>> extraHandlers = (h, r) -> null;
+
+	public static PerformFill _performFill = (recipe, screen, type, destination, amount) -> false;
+
+	public static void setPerformFill(PerformFill performFill) {
+		_performFill = performFill;
+	}
+
+	public static void resetPerformFill() {
+		_performFill = null;
+	}
 
 	public static void clear() {
 		handlers.clear();
@@ -120,9 +131,18 @@ public class EmiRecipeFiller {
 			EmiCraftContext<T> context = new EmiCraftContext<T>(screen, inv, type, destination, amount);
 			if (handler.canCraft(recipe, context)) {
 				EmiSidebars.craft(recipe);
-				return handler.craft(recipe, context);
+				if (handler.craft(recipe, context)) {
+					return true;
+				}
 			}
 		}
+
+		EmiLog.LOG.debug("Performing custom start ");
+		if (_performFill != null) {
+			EmiLog.LOG.debug("Performing custom fill ");
+			return _performFill.apply(recipe, screen, type, destination, amount);
+		}
+
 		return false;
 	}
 
@@ -279,6 +299,228 @@ public class EmiRecipeFiller {
 		return 0;
 	}
 
+
+
+	public static <T extends ScreenHandler> boolean clientFill(Slot output1, List<Slot> inputSlots1, List<Slot> craftingSlots1, EmiRecipe recipe,
+															   HandledScreen<T> screen, List<ItemStack> stacks, EmiCraftContext.Destination destination) {
+		T screenHandler = screen.getScreenHandler();
+		if (screenHandler.getCursorStack().isEmpty()) {
+			MinecraftClient client = MinecraftClient.getInstance();
+			ClientPlayerInteractionManager manager = client.interactionManager;
+			PlayerEntity player = client.player;
+			List<Slot> clear = craftingSlots1;
+			for (Slot slot : clear) {
+				if (slot != null) {
+					manager.clickSlot(screenHandler.syncId, slot.id, 0, SlotActionType.QUICK_MOVE, player);
+				}
+			}
+			List<Slot> inputs = inputSlots1;
+			List<Slot> slots = craftingSlots1;
+			outer:
+			for (int i = 0; i < stacks.size(); i++) {
+				ItemStack stack = stacks.get(i);
+				if (stack.isEmpty()) {
+					continue;
+				}
+				if (i >= slots.size()) {
+					return false;
+				}
+				Slot crafting = slots.get(i);
+				if (crafting == null) {
+					return false;
+				}
+				int needed = stack.getCount();
+				for (Slot input : inputs) {
+					if (slots.contains(input)) {
+						continue;
+					}
+					ItemStack is = input.getStack().copy();
+					if (ItemStack.canCombine(is, stack)) {
+						manager.clickSlot(screenHandler.syncId, input.id, 0, SlotActionType.PICKUP, player);
+						if (is.getCount() <= needed) {
+							needed -= is.getCount();
+							manager.clickSlot(screenHandler.syncId, crafting.id, 0, SlotActionType.PICKUP, player);
+						} else {
+							while (needed > 0) {
+								manager.clickSlot(screenHandler.syncId, crafting.id, 1, SlotActionType.PICKUP, player);
+								needed--;
+							}
+							manager.clickSlot(screenHandler.syncId, input.id, 0, SlotActionType.PICKUP, player);
+						}
+					}
+					if (needed == 0) {
+						continue outer;
+					}
+				}
+				return false;
+			}
+			Slot slot = output1;
+			if (slot != null) {
+				if (destination == EmiCraftContext.Destination.CURSOR) {
+					manager.clickSlot(screenHandler.syncId, slot.id, 0, SlotActionType.PICKUP, player);
+				} else if (destination == EmiCraftContext.Destination.INVENTORY) {
+					manager.clickSlot(screenHandler.syncId, slot.id, 0, SlotActionType.QUICK_MOVE, player);
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	public static @Nullable List<ItemStack> getStacks(Slot output1, List<Slot> inputSlots1, List<Slot> craftingSlots1, EmiRecipe recipe, int amount) {
+		try {
+//			T screenHandler = screen.getScreenHandler();
+//			if (handler != null) {
+				List<Slot> slots = inputSlots1;
+				List<Slot> craftingSlots = craftingSlots1;
+				List<EmiIngredient> ingredients = recipe.getInputs();
+				List<DiscoveredItem> discovered = Lists.newArrayList();
+				Object2IntMap<EmiStack> weightDivider = new Object2IntOpenHashMap<>();
+				for (int i = 0; i < ingredients.size(); i++) {
+					List<DiscoveredItem> d = Lists.newArrayList();
+					EmiIngredient ingredient = ingredients.get(i);
+					List<EmiStack> emiStacks = ingredient.getEmiStacks();
+					if (ingredient.isEmpty()) {
+						discovered.add(null);
+						continue;
+					}
+					for (int e = 0; e < emiStacks.size(); e++) {
+						EmiStack stack = emiStacks.get(e);
+						slotLoop:
+						for (Slot s : slots) {
+							ItemStack ss = s.getStack();
+							if (EmiStack.of(s.getStack()).isEqual(stack)) {
+								for (DiscoveredItem di : d) {
+									if (ItemStack.canCombine(ss, di.stack)) {
+										di.amount += ss.getCount();
+										continue slotLoop;
+									}
+								}
+								d.add(new DiscoveredItem(stack, ss, ss.getCount(), (int) ingredient.getAmount(), ss.getMaxCount()));
+							}
+						}
+					}
+					DiscoveredItem biggest = null;
+					for (DiscoveredItem di : d) {
+						if (biggest == null) {
+							biggest = di;
+						} else {
+							int a = di.amount / (weightDivider.getOrDefault(di.ingredient, 0) + di.consumed);
+							int ba = biggest.amount / (weightDivider.getOrDefault(biggest.ingredient, 0) + biggest.consumed);
+							if (ba < a) {
+								biggest = di;
+							}
+						}
+					}
+					if (biggest == null || i >= craftingSlots.size()) {
+						return null;
+					}
+					Slot slot = craftingSlots.get(i);
+					if (slot == null) {
+						return null;
+					}
+					weightDivider.put(biggest.ingredient, weightDivider.getOrDefault(biggest.ingredient, 0) + biggest.consumed);
+					biggest.max = Math.min(biggest.max, slot.getMaxItemCount());
+					discovered.add(biggest);
+				}
+				if (discovered.isEmpty()) {
+					return null;
+				}
+
+				List<DiscoveredItem> unique = Lists.newArrayList();
+				outer:
+				for (DiscoveredItem di : discovered) {
+					if (di == null) {
+						continue;
+					}
+					for (DiscoveredItem ui : unique) {
+						if (ItemStack.canCombine(di.stack, ui.stack)) {
+							ui.consumed += di.consumed;
+							continue outer;
+						}
+					}
+					unique.add(new DiscoveredItem(di.ingredient, di.stack, di.amount, di.consumed, di.max));
+				}
+				int maxAmount = Integer.MAX_VALUE;
+				for (DiscoveredItem ui : unique) {
+					if (!ui.catalyst()) {
+						maxAmount = Math.min(maxAmount, ui.amount / ui.consumed);
+						maxAmount = Math.min(maxAmount, ui.max);
+					}
+				}
+				maxAmount = Math.min(maxAmount, amount + batchesAlreadyPresent(recipe, output1, craftingSlots1));
+
+				if (maxAmount == 0) {
+					return null;
+				}
+
+				List<ItemStack> desired = Lists.newArrayList();
+				for (int i = 0; i < discovered.size(); i++) {
+					DiscoveredItem di = discovered.get(i);
+					if (di != null) {
+						ItemStack is = di.stack.copy();
+						int a = di.catalyst() ? di.consumed : di.consumed * maxAmount;
+						is.setCount(a);
+						desired.add(is);
+					} else {
+						desired.add(ItemStack.EMPTY);
+					}
+				}
+				return desired;
+//			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+
+	public static <T extends ScreenHandler> int batchesAlreadyPresent(EmiRecipe recipe, Slot output1, List<Slot> craftingSlots1) {
+		List<EmiIngredient> inputs = recipe.getInputs();
+		List<ItemStack> stacks = Lists.newArrayList();
+		Slot output = output1;
+		if (output != null && !output.getStack().isEmpty() && recipe.getOutputs().size() > 0
+				&& !ItemStack.areEqual(output.getStack(), recipe.getOutputs().get(0).getItemStack())) {
+			return 0;
+		}
+		for (Slot slot : craftingSlots1) {
+			if (slot != null) {
+				stacks.add(slot.getStack());
+			} else {
+				stacks.add(ItemStack.EMPTY);
+			}
+		}
+		long amount = Long.MAX_VALUE;
+		outer:
+		for (int i = 0; i < inputs.size(); i++) {
+			EmiIngredient input = inputs.get(i);
+			if (input.isEmpty()) {
+				if (stacks.get(i).isEmpty()) {
+					continue;
+				}
+				return 0;
+			}
+			if (i >= stacks.size()) {
+				return 0;
+			}
+			EmiStack es = EmiStack.of(stacks.get(i));
+			for (EmiStack v : input.getEmiStacks()) {
+				if (v.isEmpty()) {
+					continue;
+				}
+				if (v.isEqual(es) && es.getAmount() >= v.getAmount()) {
+					amount = Math.min(amount, es.getAmount() / v.getAmount());
+					continue outer;
+				}
+			}
+			return 0;
+		}
+		if (amount < Long.MAX_VALUE && amount > 0) {
+			return (int) amount;
+		}
+		return 0;
+	}
+
 	public static <T extends ScreenHandler> boolean clientFill(StandardRecipeHandler<T> handler, EmiRecipe recipe,
 			HandledScreen<T> screen, List<ItemStack> stacks, EmiCraftContext.Destination destination) {
 		T screenHandler = screen.getScreenHandler();
@@ -364,5 +606,10 @@ public class EmiRecipeFiller {
 		public boolean catalyst() {
 			return ingredient.getRemainder().isEqual(ingredient, COMPARISON);
 		}
+	}
+
+
+	public interface PerformFill {
+		boolean apply(EmiRecipe recipe, HandledScreen<?> screen, EmiCraftContext.Type type, EmiCraftContext.Destination destination, int amount);
 	}
 }

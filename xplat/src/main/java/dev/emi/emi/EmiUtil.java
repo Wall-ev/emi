@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import dev.emi.emi.api.EmiApi;
@@ -24,19 +25,24 @@ import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.entry.RegistryEntryList.Named;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.screen.AbstractRecipeScreenHandler;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.World;
 
 public class EmiUtil {
 	public static final Random RANDOM = new Random();
@@ -50,6 +56,46 @@ public class EmiUtil {
 			return hs.getScreenHandler();
 		}
 		return null;
+	}
+
+	public static <T extends net.minecraft.recipe.Recipe<Inventory>, K extends ScreenHandler> void recipeClick(EmiRecipe recipe, EmiCraftContext<K> context, RecipeType<T> type) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		World world = client.world;
+		Inventory inv = new SimpleInventory(recipe.getInputs().get(0).getEmiStacks().get(0).getItemStack());
+		List<T> recipes = world.getRecipeManager().getAllMatches(type, inv, world);
+		for (int i = 0; i < recipes.size(); i++) {
+			if (EmiPort.getId(recipes.get(i)) != null && EmiPort.getId(recipes.get(i)).equals(recipe.getId())) {
+				K sh = context.getScreenHandler();
+				client.interactionManager.clickButton(sh.syncId, i);
+				if (context.getDestination() == EmiCraftContext.Destination.CURSOR) {
+					client.interactionManager.clickSlot(sh.syncId, 1, 0, SlotActionType.PICKUP, client.player);
+				} else if (context.getDestination() == EmiCraftContext.Destination.INVENTORY) {
+					client.interactionManager.clickSlot(sh.syncId, 1, 0, SlotActionType.QUICK_MOVE, client.player);
+				}
+				break;
+			}
+		}
+	}
+
+	public static <K extends ScreenHandler> void recipeClick(EmiCraftContext<K> context, int i, boolean clickSlot) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		K sh = context.getScreenHandler();
+		client.interactionManager.clickButton(sh.syncId, i);
+		if (clickSlot) {
+			if (context.getDestination() == EmiCraftContext.Destination.CURSOR) {
+				client.interactionManager.clickSlot(sh.syncId, 1, 0, SlotActionType.PICKUP, client.player);
+			} else if (context.getDestination() == EmiCraftContext.Destination.INVENTORY) {
+				client.interactionManager.clickSlot(sh.syncId, 1, 0, SlotActionType.QUICK_MOVE, client.player);
+			}
+		}
+	}
+
+	public static ClientPlayerInteractionManager getInteractionManager() {
+		return getClient().interactionManager;
+	}
+
+	public static MinecraftClient getClient() {
+		return MinecraftClient.getInstance();
 	}
 
 	public static String subId(Identifier id) {

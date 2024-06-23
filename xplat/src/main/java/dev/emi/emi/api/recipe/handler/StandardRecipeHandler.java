@@ -1,14 +1,6 @@
 package dev.emi.emi.api.recipe.handler;
 
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
-
 import com.mojang.blaze3d.systems.RenderSystem;
-
 import dev.emi.emi.api.recipe.EmiPlayerInventory;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.stack.EmiIngredient;
@@ -25,6 +17,12 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 
 public interface StandardRecipeHandler<T extends ScreenHandler> extends EmiRecipeHandler<T> {
 	

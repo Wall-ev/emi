@@ -79,7 +79,6 @@ public class EmiScreenManager {
     public static SizedButtonWidget tree = new SizedButtonWidget(0, 0, 20, 20, 184, 0,
             () -> true, (w) -> EmiApi.viewRecipeTree(),
             List.of(EmiPort.translatable("tooltip.emi.recipe_tree")));
-    public static Map<String, String> recipeTypeMap = new HashMap<>();
     private static MinecraftClient client = MinecraftClient.getInstance();
     public static EmiSearchWidget search = new EmiSearchWidget(client.textRenderer, 0, 0, 160, 18);
     public static SizedButtonWidget emi = new SizedButtonWidget(0, 0, 20, 20, 204, 0,
@@ -104,6 +103,9 @@ public class EmiScreenManager {
     private static boolean lastHoveredCraftableSturdy = false;
     private static int lastHoveredCraftableOffset = -1;
     private static double scrollAcc = 0;
+
+
+    public static Map<String, String> recipeTypeMap = new HashMap<>();
     private static Consumer<Screen> updateTypeRecipesCon;
     private static Consumer<Void> updateCraftablesCon;
     private static Function<Screen, String> getContainerClassNameFunc;
@@ -272,7 +274,10 @@ public class EmiScreenManager {
             EmiPlayerInventory inv = EmiPlayerInventory.of(client.player);
             SidebarPanel searchPanel = getSearchPanel();
 
-            boolean equal = lastPlayerInventory.hashCode() == inv.hashCode();
+            if (lastPlayerInventory != null) {
+                boolean equal = lastPlayerInventory.hashCode() == inv.hashCode();
+//                EmiLog.info("Inventory changed: " + equal);
+            }
 
             if (!inv.isEqual(lastPlayerInventory)) {
                 lastPlayerInventory = inv;

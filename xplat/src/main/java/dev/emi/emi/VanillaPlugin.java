@@ -53,10 +53,7 @@ import dev.emi.emi.api.widget.GeneratedSlotWidget;
 import dev.emi.emi.config.EffectLocation;
 import dev.emi.emi.config.EmiConfig;
 import dev.emi.emi.config.FluidUnit;
-import dev.emi.emi.handler.CookingRecipeHandler;
-import dev.emi.emi.handler.CraftingRecipeHandler;
-import dev.emi.emi.handler.InventoryRecipeHandler;
-import dev.emi.emi.handler.StonecuttingRecipeHandler;
+import dev.emi.emi.handler.*;
 import dev.emi.emi.mixin.accessor.AxeItemAccessor;
 import dev.emi.emi.mixin.accessor.HandledScreenAccessor;
 import dev.emi.emi.mixin.accessor.HoeItemAccessor;
@@ -252,6 +249,8 @@ public class VanillaPlugin implements EmiPlugin {
 		registry.addWorkstation(COMPOSTING, EmiStack.of(Items.COMPOSTER));
 
 		registry.addRecipeHandler(null, new InventoryRecipeHandler());
+		registry.addRecipeHandler(ScreenHandlerType.BREWING_STAND, new BrewingRecipeHandler());
+		registry.addRecipeHandler(ScreenHandlerType.SMITHING, new SmithingRecipeHandler());
 		registry.addRecipeHandler(ScreenHandlerType.CRAFTING, new CraftingRecipeHandler());
 		registry.addRecipeHandler(ScreenHandlerType.FURNACE, new CookingRecipeHandler<FurnaceScreenHandler>(SMELTING));
 		registry.addRecipeHandler(ScreenHandlerType.BLAST_FURNACE, new CookingRecipeHandler<BlastFurnaceScreenHandler>(BLASTING));

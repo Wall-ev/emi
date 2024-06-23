@@ -14,7 +14,6 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.registry.EmiRecipeFiller;
 import dev.emi.emi.registry.EmiStackList;
 import dev.emi.emi.runtime.EmiFavorite;
-import dev.emi.emi.runtime.EmiSidebars;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -222,7 +221,6 @@ public class EmiPlayerInventory {
         }
         return true;
     }
-
 
 
     public boolean canCraft1(EmiRecipe recipe, long amount) {
